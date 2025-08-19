@@ -5,8 +5,6 @@ import (
 	"errors"
 	"log"
 	"net/http"
-	"os/signal"
-	"syscall"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -29,31 +27,19 @@ func AuthJWTMiddleware() gin.HandlerFunc {
 	}
 }
 
-func UpdateArticleBiz(ctx context.Context, id, content string) (string, error) {
-	// Simulate a slow operation
-	select {
-	case <-time.After(5 * time.Second):
-		// Retrieve the user permission from context
-		value := ctx.Value("user_permissions")
-		if valueStr, ok := value.(string); ok {
-			return valueStr, nil
-		}
-		return "", errors.New("user_permission not found")
-	case <-ctx.Done():
-		log.Println("update article got error:", ctx.Err())
-		return "", ctx.Err()
-	}
-}
-
 func UpdateArticleHandler(c *gin.Context) {
+	// ⏱ Set a timeout of 2 seconds for the request
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 2*time.Second)
+	defer cancel()
+
 	id := c.Param("id") // get request param named id from gin.Context
 
 	reqBody := new(UpdateArticleRequest)
 	c.Bind(&reqBody) // get request body form gin.Context
 
-	perm, err := UpdateArticleBiz(c.Request.Context(), id, reqBody.Content)
+	// pass context.Context to business layer to update the article
+	perm, err := UpdateArticleBiz(ctx, id, reqBody.Content)
 	if err != nil {
-		log.Println("[ERROR] update article failed: ", err.Error())
 		c.JSON(http.StatusGatewayTimeout, gin.H{"error": err.Error()})
 		return
 	}
@@ -66,11 +52,23 @@ func UpdateArticleHandler(c *gin.Context) {
 	})
 }
 
-func main() {
-	// Create new context listen from syscall interrupt or terminate
-	appCtx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-	defer stop()
+func UpdateArticleBiz(ctx context.Context, id, content string) (string, error) {
+	// Simulate a slow operation
+	select {
+	case <-time.After(3 * time.Second):
+		// Retrieve the user permission from context
+		value := ctx.Value("user_permissions")
+		if valueStr, ok := value.(string); ok {
+			return valueStr, nil
+		}
+		return "", errors.New("user_permission not found")
+	case <-ctx.Done():
+		log.Println("update article got error:", ctx.Err())
+		return "", ctx.Err()
+	}
+}
 
+func main() {
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
 
@@ -78,29 +76,5 @@ func main() {
 	router.Use(AuthJWTMiddleware())
 	router.PUT("/article/:id", UpdateArticleHandler)
 
-	srv := &http.Server{
-		Addr:    ":8080",
-		Handler: router.Handler(),
-	}
-
-	// start HTTP on different go routine
-	go func() {
-		if err := srv.ListenAndServe(); err != nil &&
-			err != http.ErrServerClosed {
-			log.Fatalf("listen: %s\n", err)
-		}
-	}()
-
-	// If got signal interrupt or terminate, gracefully shutdown the server
-	<-appCtx.Done()
-	log.Printf("shutdown signal received\n")
-
-	// Give the server up to 10 seconds to finish processing ongoing requests
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	if err := srv.Shutdown(ctx); err != nil {
-		log.Println("Server Shutdown:", err)
-	}
-	log.Println("Server exiting")
+	router.Run()
 }
