@@ -28,9 +28,9 @@ func AuthJWTMiddleware() gin.HandlerFunc {
 }
 
 func UpdateArticleHandler(c *gin.Context) {
-	// ⏱ Set a timeout of 2 seconds for the request
-	ctx, cancel := context.WithDeadline(c.Request.Context(), time.Now().Add(time.Second*2))
-	defer cancel()
+	// remove the context timeout
+	// ctx, cancel := context.WithDeadline(c.Request.Context(), time.Now().Add(time.Second*2))
+	// defer cancel()
 
 	id := c.Param("id") // get request param named id from gin.Context
 
@@ -38,7 +38,7 @@ func UpdateArticleHandler(c *gin.Context) {
 	c.Bind(&reqBody) // get request body form gin.Context
 
 	// pass context.Context to business layer to update the article
-	perm, err := UpdateArticleBiz(ctx, id, reqBody.Content)
+	perm, err := UpdateArticleBiz(c.Request.Context(), id, reqBody.Content)
 	if err != nil {
 		c.JSON(http.StatusGatewayTimeout, gin.H{"error": err.Error()})
 		return
