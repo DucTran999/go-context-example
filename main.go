@@ -78,15 +78,11 @@ func main() {
 	router.Use(AuthJWTMiddleware())
 	router.PUT("/article/:id", UpdateArticleHandler)
 
-	srv := &http.Server{
-		Addr:    ":8080",
-		Handler: router.Handler(),
-	}
+	srv := &http.Server{Addr: ":8080", Handler: router.Handler()}
 
 	// start HTTP on different go routine
 	go func() {
-		if err := srv.ListenAndServe(); err != nil &&
-			err != http.ErrServerClosed {
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("listen: %s\n", err)
 		}
 	}()
