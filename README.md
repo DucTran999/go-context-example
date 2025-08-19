@@ -4,7 +4,7 @@
 [![Go](https://img.shields.io/badge/Go-1.24.6-blue?logo=go)](https://golang.org)
 
 - This repo we will explore the use of context in Go.
-- See my post on medium: [Go Context Example](https://medium.com/@ductran999/go-context-example-9b5a0a0a0a0a)
+- See my post on medium: [Go Context Example](https://medium.com/@tranaduc9x/follow-a-http-requests-journey-to-learn-go-context-2aefa38d819f)
 
 ## Installation
 
