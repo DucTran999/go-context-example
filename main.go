@@ -29,7 +29,7 @@ func AuthJWTMiddleware() gin.HandlerFunc {
 
 func UpdateArticleHandler(c *gin.Context) {
 	// ⏱ Set a timeout of 2 seconds for the request
-	ctx, cancel := context.WithTimeout(c.Request.Context(), 2*time.Second)
+	ctx, cancel := context.WithDeadline(c.Request.Context(), time.Now().Add(time.Second*2))
 	defer cancel()
 
 	id := c.Param("id") // get request param named id from gin.Context
